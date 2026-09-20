@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        background-color: #000000;
+        color: #00FF66;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+    }
+}
+
+/* Custom scrollbars for hacker terminal feel */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #000000;
+}
+::-webkit-scrollbar-thumb {
+    background: #003311;
+    border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #00AA44;
+}

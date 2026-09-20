@@ -1,2 +1,2 @@
 # FinTech-Stocks-PhantomSoul
-FinTech App that helps people eliminate cognitive bias and enforce disciplined investment decisions.
+A high-discipline, hacker-terminal-themed Personal Investment Operating System designed to eliminate cognitive bias, enforce thesis integrity, and remove emotional impulses from financial decision-making.

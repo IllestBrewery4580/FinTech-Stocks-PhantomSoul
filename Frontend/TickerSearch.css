@@ -1,0 +1,61 @@
+.search-container {
+    position: relative;
+    width: 100%;
+  }
+  
+  .terminal-input {
+    width: 100%;
+    background-color: #050b07;
+    border: 1px solid #10b981;
+    color: #10b981;
+    font-family: monospace;
+    padding: 8px 12px;
+    outline: none;
+  }
+  
+  /* Floating overlay container */
+  .dropdown-overlay {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background-color: #090e0a;
+    border: 1px solid #10b981;
+    margin-top: 4px;
+    max-height: 250px;
+    overflow-y: auto;
+  }
+  
+  /* Item hover and layout */
+  .dropdown-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #163820;
+  }
+  
+  .dropdown-card:hover {
+    background-color: #10b98122;
+  }
+  
+  .ticker-symbol {
+    color: #10b981;
+    font-weight: bold;
+    display: block;
+  }
+  
+  .company-name {
+    color: #059669;
+    font-size: 0.8rem;
+  }
+  
+  .exchange-badge {
+    background-color: #064e3b;
+    color: #10b981;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 2px;
+  }
