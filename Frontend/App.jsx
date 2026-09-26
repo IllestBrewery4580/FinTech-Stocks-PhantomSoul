@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+import TickerSearch from './components/TickerSearch';
+
 function TypewriterHeader({ text, speed = 40 }) {
   const [displayedText, setDisplayedText] = useState('');
 
