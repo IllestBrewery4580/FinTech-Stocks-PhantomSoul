@@ -1,0 +1,2 @@
+# FinTech-Stocks-PhantomSoul
+A high-discipline, hacker-terminal-themed Personal Investment Operating System designed to eliminate cognitive bias, enforce thesis integrity, and remove emotional impulses from financial decision-making.
