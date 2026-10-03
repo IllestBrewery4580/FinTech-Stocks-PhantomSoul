@@ -1,4 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+import AssetSearch from './components/AssetSearch';
+import NotificationPreferences from './components/NotificationPreferences';
+import PhantomAssistant from './components/PhantomAssistant';
 
 function TypewriterHeader({ text, speed = 40 }) {
   const [displayedText, setDisplayedText] = useState('');
@@ -22,7 +26,7 @@ function TypewriterHeader({ text, speed = 40 }) {
 }
 
 export default function App() {
-  const [ticker, setTicker] = useState('RELIANCE.NS');
+  const [ticker, setTicker] = useState('AAPL');
   const [stockDetails, setStockDetails] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -176,66 +180,17 @@ export default function App() {
               [01] GLOBAL INSTRUMENT SEARCH
             </div>
 
-            <input
-              type="text"
-              placeholder="Search ticker or company (e.g. RELIANCE, AAPL)"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => searchQuery && setIsDropdownOpen(true)}
-              style={{
-                width: '100%',
-                backgroundColor: '#02180e',
-                border: '1px solid #10b981',
-                color: '#10b981',
-                padding: '8px 10px',
-                outline: 'none',
-                fontFamily: 'monospace',
-                boxSizing: 'border-box'
-              }}
-            />
+            <AssetSearch
+              mode="WEALTH"
+              onSelectAsset={(asset) => {
+                setTicker(asset.symbol);
 
-            {/* Dropdown Overlay */}
-            {isDropdownOpen && searchResults.length > 0 && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '80px',
-                  left: 0,
-                  right: 0,
-                  backgroundColor: '#080d0a',
-                  border: '1px solid #10b981',
-                  zIndex: 50,
-                  maxHeight: '220px',
-                  overflowY: 'auto',
-                  boxShadow: '0 10px 25px rgba(0,0,0,0.8)'
-                }}
-              >
-                {searchResults.map((item) => (
-                  <div
-                    key={item.symbol}
-                    onClick={() => handleSelectTicker(item)}
-                    style={{
-                      padding: '10px',
-                      borderBottom: '1px solid #0f3822',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#062919'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  >
-                    <div>
-                      <div style={{ fontWeight: 'bold', color: '#10b981' }}>{item.symbol}</div>
-                      <div style={{ fontSize: '0.7rem', color: '#047857' }}>{item.name}</div>
-                    </div>
-                    <span style={{ fontSize: '0.65rem', border: '1px solid #047857', padding: '2px 4px', color: '#34d399' }}>
-                      {item.exchange}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+                if (!watchlist.some((item) => item.symbol === asset.symbol)) {
+                  setWatchlist((previous) => [asset, ...previous]);
+                }
+              }}
+              placeholder="Search ticker or company (e.g. AAPL, NVDA, RELIANCE)"
+            />
 
             {/* Active Watchlist */}
             <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
