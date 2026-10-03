@@ -1,0 +1,258 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        background-color: #000000;
+        color: #00FF66;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+    }
+}
+
+/* Handwriting Font Class for Labels/Titles */
+.font-handwriting {
+    font-family: "Comic Sans MS", "Comic Sans", "Chalkboard SE", "Comic Neue", cursive, sans-serif;
+}
+
+/* Terminal Matrix Input Styling */
+.matrix-input {
+    color: #00FF66 !important;
+    caret-color: #00FF66 !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.matrix-input::placeholder {
+    color: #005522;
+}
+
+/* Green focus glow when typing */
+.matrix-input:focus {
+    outline: none;
+    border-color: #00FF66 !important;
+    box-shadow: 0 0 10px rgba(0, 255, 102, 0.35);
+}
+
+/* Custom scrollbars for hacker terminal feel */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #000000;
+}
+::-webkit-scrollbar-thumb {
+    background: #003311;
+    border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #00AA44;
+}
+
+/* ============================================================
+   PHANTOMSOUL AUTHENTICATION
+   ============================================================ */
+
+.auth-page {
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: 
+        radial-gradient(
+            circle at center, 
+            rgba(0, 225, 102, 0.045), 
+            transparent 45%
+        ), 
+        #000000;
+    padding:24px;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 460px;
+    padding: 38px;
+    border: 1px solid #003311;
+    background: rgba(0, 8, 4, 0.96);
+    box-shadow:
+        0 0 30px rgba(0, 255, 102, 0.08),
+        inset 0 0 30px rgba(0, 255, 102, 0.025);
+}
+
+.auth-brand {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 42px;
+}
+
+.brand-mark {
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #00ff66;
+    color: #00ff66;
+    font-size: 22px;
+    font-weight: 700;
+    box-shadow: 0 0 14px rgba(0, 255, 102, 0.25);
+}
+
+.auth-brand h1 {
+    margin: 0;
+    color: #00ff66;
+    font-size: 20px;
+    letter-spacing: 0.18em;
+}
+
+.auth-brand p {
+    margin: 5px 0 0;
+    color: #33774d;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+}
+
+.auth-heading {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 24px;
+    color: #00ff66;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+}
+
+.status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #00ff66;
+    box-shadow: 0 0 8px #00ff66;
+}
+
+.auth-card form {
+    display: flex;
+    flex-direction: column;
+}
+
+.auth-card label {
+    margin: 16px 0 7px;
+    color: #4caf70;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+}
+
+.auth-card input {
+    width: 100%;
+    padding: 13px 14px;
+    box-sizing: border-box;
+    border: 1px solid #003311;
+    background: #000000;
+    color: #00ff66;
+    font-family:
+        ui-monospace,
+        SFMono-Regular,
+        Menlo,
+        Monaco,
+        Consolas,
+        "Liberation Mono",
+        "Courier New",
+        monospace;
+    font-size: 13px;
+    outline: none;
+}
+
+.auth-card input::placeholder {
+    color: #164d2d;
+}
+
+.auth-card input:focus {
+    border-color: #00ff66;
+    box-shadow: 0 0 10px rgba(0, 255, 102, 0.25);
+}
+
+.auth-submit {
+    margin-top: 26px;
+    padding: 13px;
+    border: 1px solid #00ff66;
+    background: #00ff66;
+    color: #000000;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    transition: all 0.15s ease;
+}
+
+.auth-submit:hover {
+    background: #000000;
+    color: #00ff66;
+    box-shadow: 0 0 15px rgba(0, 255, 102, 0.3);
+}
+
+.auth-switch {
+    width: 100%;
+    margin-top: 18px;
+    padding: 8px;
+    border: none;
+    background: transparent;
+    color: #33774d;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 10px;
+}
+
+.auth-switch:hover {
+    color: #00ff66;
+}
+
+.auth-error {
+    margin-top: 16px;
+    padding: 10px;
+    border: 1px solid #552200;
+    background: rgba(255, 80, 0, 0.04);
+    color: #ff7744;
+    font-size: 11px;
+}
+
+.security-notice {
+    display: flex;
+    gap: 11px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #00220c;
+    color: #33774d;
+    font-size: 10px;
+    line-height: 1.6;
+}
+
+.security-notice strong {
+    color: #00aa44;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+}
+
+.security-notice p {
+    margin: 4px 0 0;
+}
+
+@media (max-width: 520px) {
+    .auth-page {
+        padding: 14px;
+    }
+
+    .auth-card {
+        padding: 25px;
+    }
+
+    .auth-brand h1 {
+        font-size: 17px;
+    }
+}
