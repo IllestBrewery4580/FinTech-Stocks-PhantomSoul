@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import AuthPage from './AuthPage';
-import MarketWatch from './MarketWatch';
 
 function TypewriterHeader({ text, speed = 40 }) {
   const [displayedText, setDisplayedText] = useState('');
@@ -115,7 +113,7 @@ export default function App() {
 
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/search?q=${encodeURIComponent(searchQuery)}`);
+        const res = await fetch(`http://localhost:5001/api/search?q=${encodeURIComponent(searchQuery)}`);
         const data = await res.json();
         setSearchResults(data);
         setIsDropdownOpen(true);
@@ -131,7 +129,7 @@ export default function App() {
   useEffect(() => {
     async function fetchQuote() {
       try {
-        const res = await fetch(`http://localhost:5000/api/quote/${ticker}`);
+        const res = await fetch(`http://localhost:5001/api/quote/${ticker}`);
         const data = await res.json();
         setStockDetails(data);
       } catch (err) {
