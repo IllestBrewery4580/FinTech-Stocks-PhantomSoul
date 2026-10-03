@@ -64,7 +64,7 @@ export default function App() {
     const [step, setStep] = useState('CREDENTIALS'); // 'CREDENTIALS' | 'VERIFY'
     const [error, setError] = useState('');
 
-    const handleSumbit = async (e) => {
+    const handleSubmit = async (e) => {
       e.preventDefault();
       setError('');
 
