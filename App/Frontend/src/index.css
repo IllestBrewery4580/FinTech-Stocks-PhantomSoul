@@ -13,6 +13,29 @@
     }
 }
 
+/* Handwriting Font Class for Labels/Titles */
+.font-handwriting {
+    font-family: "Comic Sans MS", "Comic Sans", "Chalkboard SE", "Comic Neue", cursive, sans-serif;
+}
+
+/* Terminal Matrix Input Styling */
+.matrix-input {
+    color: #00FF66 !important;
+    caret-color: #00FF66 !important;
+    font-family: it-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.matrix-input::placeholder {
+    color: #005522;
+}
+
+/* Green focus glow when typing */
+.matrix-input:focus {
+    outline: none;
+    border-color: #00FF66 !important;
+    box-shadow: 0 0 10px rgba(0, 255, 102, 0.35);
+}
+
 /* Custom scrollbars for hacker terminal feel */
 ::-webkit-scrollbar {
     width: 6px;
