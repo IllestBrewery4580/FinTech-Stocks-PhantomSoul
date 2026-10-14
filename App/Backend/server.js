@@ -3,35 +3,45 @@ import cors from 'cors';
 import YahooFinance from 'yahoo-finance2';
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import crypto from 'node:crypto';
 
 import Thesis from './models/Thesis.js';
 import Notifications from './models/Notification.js';
 
-import portfolioRoutes from './routs/portfolioRoutes.js';
+import portfolioRoutes from './routes/portfolioRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 
 import authRoutes from './routes/authRoutes.js';
 
 import mongoose from 'mongoose';
+import { authenticateToken } from './middleware/authMiddleware.js';
 
-import portfolioRoutes from './routes/portfolioRoutes.js';
+import adminRoutes from "./routes/adminRoutes.js";
 
+
+// Load environment variables before initializing application services.
 dotenv.config();
 
-await mongoose.connect(process.env.MONGODB_URI);
+if (!process.env.MONGO_URI) {
+  throw new Error(
+    '[DATABASE] MONGO_URI is missing. Configure it in Backend/.env.'
+  );
+}
 
-console.log('[DATABASE) MongoDB connected');
+try {
+  await mongoose.connect(process.env.MONGO_URI);
+  console.log('[DATABASE] MongoDB connected.');
+} catch (error) {
+  console.error('[DATABASE] MongoDB connection failed:', error.message);
+  process.exit(1);
+}
 
 // --------------------------------------------------
 // CONFIGURATION & ENVIRONMENT VALIDATION
 // --------------------------------------------------
 
 const PORT = process.env.PORT || 5001;
-const JWT_SECRET = process.env.JWT_SECRET || 'PHANTOM_SOUL_SUPER_SECRET_KEY';
-const FIRM_EMAIL_DOMAIN = (process.env.FIRM_EMAIL_DOMAIN || '@firm.com').toLowerCase();
+const JWT_SECRET = process.env.JWT_SECRET;
 
 console.log('PORT:', PORT);
 console.log('OPENAI Key Loaded:', process.env.OPENAI_API_KEY ? 'YES' : 'NO');
@@ -41,37 +51,34 @@ if (!JWT_SECRET || JWT_SECRET.length < 32) {
   throw new Error('JWT_SECRET must be configured with at least 32 characters.');
 }
 
-if (!process.env.OPENAI_API_KEY) {
-  throw new Error('OPENAI_API_KEY is required.');
+// OpenAI is optional. Core features should work without API credits.
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
+
+if (!openai) {
+  console.warn(
+    '[AI] OPENAI_API_KEY is not configured. AI features are disabled.'
+  );
 }
 
-// --------------------------------------------------
 // APP & SERVICES INITIALIZATION
-// --------------------------------------------------
-
 const app = express();
-// Global Middleware
+
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
+
 app.use('/api/auth', authRoutes);
-
-// Protected Portfolio + Asset APIs
 app.use('/api', portfolioRoutes);
-
-app.use('/api', portfolioRoutes);
-
-// Protected PhantomSoul At APIs
 app.use('/api', aiRoutes);
+app.use('/api/admin', adminRoutes);
 
 const yahooFinance = new YahooFinance();
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // --------------------------------------------------
 // TEMPORARY IN-MEMORY DATABASES
 // --------------------------------------------------
 
-const usersDB = new Map();
-const verificationCodes = new Map();
 const firmAuditLogs = new Map();
 
 let userNotifications = [
@@ -133,37 +140,6 @@ const corporateStrategyDatabase = [
 // HELPER FUNCTIONS
 // --------------------------------------------------
 
-function normalizeEmail(email) {
-  return typeof email === 'string' ? email.trim().toLowerCase() : '';
-}
-
-function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function createToken(user) {
-  return jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
-    JWT_SECRET,
-    { expiresIn: '8h' }
-  );
-}
-
-function authenticateToken(req, res, next) {
-  const authorization = req.headers.authorization;
-
-  if (!authorization?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Authentication required.' });
-  }
-
-  try {
-    req.user = jwt.verify(authorization.slice(7), JWT_SECRET);
-    return next();
-  } catch {
-    return res.status(401).json({ error: 'Invalid or expired token.' });
-  }
-}
-
 function getStrategicValue(item) {
   return (
     item.evToRevenue ||
@@ -173,135 +149,6 @@ function getStrategicValue(item) {
     'N/A'
   );
 }
-
-// --------------------------------------------------
-// 1. SIGNUP AND EMAIL VERIFICATION
-// --------------------------------------------------
-
-app.post('/api/auth/signup', async (req, res) => {
-  try {
-    const email = normalizeEmail(req.body.email);
-    const { password, name } = req.body;
-
-    if (!isValidEmail(email)) {
-      return res.status(400).json({ error: 'Enter a valid email address.' });
-    }
-
-    if (typeof password !== 'string' || password.length < 12) {
-      return res.status(400).json({ error: 'Password must be at least 12 characters.' });
-    }
-
-    if (usersDB.has(email)) {
-      return res.status(409).json({ error: 'An account with this email already exists.' });
-    }
-
-    // Determine dual practice role automatically based on email domain
-    const isEmployee = email.endsWith(FIRM_EMAIL_DOMAIN) || email.endsWith('@company.com');
-    const role = isEmployee ? 'EMPLOYEE' : 'CLIENT';
-
-    const hashedPassword = await bcrypt.hash(password, 12);
-    const verificationCode = crypto.randomInt(100000, 1000000).toString();
-
-    const newUser = {
-      id: crypto.randomUUID(),
-      name: name || email.split('@')[0],
-      email,
-      password: hashedPassword,
-      verified: false,
-      role,
-    };
-
-    usersDB.set(email, newUser);
-    verificationCodes.set(email, {
-      code: verificationCode,
-      expiresAt: Date.now() + 10 * 60 * 1000,
-    });
-
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`Verification code for \({email}:\){verificationCode}`);
-    }
-
-    return res.status(201).json({
-      message: `Verification code sent to \({email}. Registered as\){role}`,
-      role,
-    });
-  } catch (error) {
-    console.error('[SIGNUP ERROR]', error.message);
-    return res.status(500).json({ error: 'Signup failed.' });
-  }
-});
-
-// --------------------------------------------------
-// 2. VERIFY EMAIL
-// --------------------------------------------------
-
-app.post('/api/auth/verify', (req, res) => {
-  const email = normalizeEmail(req.body.email);
-  const { code } = req.body;
-
-  const user = usersDB.get(email);
-  const verification = verificationCodes.get(email);
-
-  if (
-    !user ||
-    !verification ||
-    verification.expiresAt < Date.now() ||
-    verification.code !== code
-  ) {
-    return res.status(400).json({ error: 'Invalid or expired verification code.' });
-  }
-
-  user.verified = true;
-  verificationCodes.delete(email);
-
-  const token = createToken(user);
-
-  return res.json({
-    token,
-    user: {
-      email: user.email,
-      role: user.role,
-    },
-  });
-});
-
-// --------------------------------------------------
-// 3. LOGIN
-// --------------------------------------------------
-
-app.post('/api/auth/login', async (req, res) => {
-  try {
-    const email = normalizeEmail(req.body.email);
-    const { password } = req.body;
-
-    const user = usersDB.get(email);
-
-    if (
-      !user ||
-      typeof password !== 'string' ||
-      !(await bcrypt.compare(password, user.password))
-    ) {
-      return res.status(401).json({ error: 'Invalid credentials.' });
-    }
-
-    if (!user.verified) {
-      return res.status(403).json({ error: 'Account not verified.' });
-    }
-
-    const token = createToken(user);
-
-    return res.json({
-      token,
-      user: {
-        email: user.email,
-        role: user.role,
-      },
-    });
-  } catch (error) {
-    console.error('[LOGIN ERROR]', error.message);
-    return res.status(500).json({ error: 'Login failed.' });
-  }
-});
 
 // --------------------------------------------------
 // 4. FIRM AUDIT LOGS
@@ -467,6 +314,12 @@ app.post('/api/analyze-thesis', authenticateToken, async (req, res) => {
     return res.status(400).json({ error: 'Invalid analysis mode.' });
   }
 
+    if (!openai) {
+      return res.status(503).json({
+        error: 'AI analysis is unavailable. Configure OPENAI_API_KEY to enable this feature.',
+      });
+    }
+
   try {
     const systemPrompt =
       contextMode === 'STRATEGY'
@@ -523,6 +376,11 @@ app.get('/api/notifications', authenticateToken, (req, res) => {
 let riskCheckRunning = false;
 
 async function checkWatchlistRisk() {
+  if (!openai) {
+    console.warn('[AI] Background risk checks are disabled because OPENAI_API_KEY is missing.');
+    return;
+  }
+
   if (riskCheckRunning) {
     console.log('[CRON] Risk check already running.');
     return;
@@ -583,8 +441,12 @@ If information is insufficient, do not invent an alert.
   }
 }
 
-checkWatchlistRisk();
-setInterval(checkWatchlistRisk, 15 * 60 * 1000);
+if (openai) {
+  checkWatchlistRisk();
+  setInterval(checkWatchlistRisk, 15 * 60 * 1000);
+} else {
+  console.warn('[AI] Background watchlist checks are not scheduled.');
+}
 
 // --------------------------------------------------
 // 10. START SERVER

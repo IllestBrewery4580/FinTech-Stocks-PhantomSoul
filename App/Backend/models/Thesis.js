@@ -1,10 +1,29 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
-const ThesisSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  content: { type: String, required: true },
-  aiAnalysis: { type: Object },
-  createdAt: { type: Date, default: Date.now }
-});
+const thesisSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    content: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    aiAnalysis: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
 
-module.exports = mongoose.model('Thesis', ThesisSchema);
+const Thesis =
+  mongoose.models.Thesis ||
+  mongoose.model('Thesis', thesisSchema);
+
+export default Thesis;

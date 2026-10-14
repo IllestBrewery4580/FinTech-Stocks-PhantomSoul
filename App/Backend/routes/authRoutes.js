@@ -1,184 +1,249 @@
-import express from 'express';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import express from "express";
+import bcrypt from "bcryptjs";
+import mongoose from "mongoose";
+import User from "../models/User.js";
+import {
+  generateAccessToken,
+  verifyAccessToken,
+} from "../utils/tokenUtils.js";
 
 const router = express.Router();
 
-// Temporary in-memory user store.
-// Replace this with your database/User model once persistence is connected.
-const users = [];
+const MIN_PASSWORD_LENGTH = 12;
 
-const JWT_SECRET = process.env.JWT_SECRET || 'phantom-soul-dev-secret';
+function publicUser(user) {
+  return {
+    id: user._id.toString(),
+    email: user.email,
+    role: user.role,
+    verified: user.isEmailVerified,
+  };
+}
 
-// -------------------------
 // POST /api/auth/register
-// -------------------------
-router.post('/register', async (req, res) => {
+router.post("/register", async (req, res) => {
   try {
-    const { email, password, role = 'CLIENT' } = req.body;
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: "Database is unavailable.",
+      });
+    }
+
+    const email =
+      typeof req.body.email === "string"
+        ? req.body.email.trim().toLowerCase()
+        : "";
+
+    const password =
+      typeof req.body.password === "string"
+        ? req.body.password
+        : "";
 
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        error: 'Email and password are required.'
+        error: "Email and password are required.",
       });
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
-
-    if (password.length < 8) {
+    if (
+      email.length > 254 ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    ) {
       return res.status(400).json({
         success: false,
-        error: 'Password must be at least 8 characters.'
+        error: "Enter a valid email address.",
       });
     }
 
-    const existingUser = users.find(
-      (user) => user.email === normalizedEmail
-    );
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      return res.status(400).json({
+        success: false,
+        error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`,
+      });
+    }
+
+    if (Buffer.byteLength(password, "utf8") > 72) {
+      return res.status(400).json({
+        success: false,
+        error: "Password is too long.",
+      });
+    }
+
+    const existingUser = await User.findOne({ email }).lean();
 
     if (existingUser) {
       return res.status(409).json({
         success: false,
-        error: 'An account with that email already exists.'
+        error: "An account with that email already exists.",
       });
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
 
-    const user = {
-      id: users.length + 1,
-      email: normalizedEmail,
+    // Public registration always creates a client account.
+    const user = await User.create({
+      email,
       passwordHash,
-      role,
-      verified: false,
-      createdAt: new Date().toISOString()
-    };
-
-    users.push(user);
+      role: "client",
+      isActive: true,
+      isEmailVerified: false,
+    });
 
     return res.status(201).json({
       success: true,
-      message: 'Account created.',
-      data: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        verified: user.verified
-      }
+      message: "Account created.",
+      data: publicUser(user),
     });
   } catch (error) {
-    console.error('[AUTH REGISTER ERROR]:', error);
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        error: "An account with that email already exists.",
+      });
+    }
+
+    console.error("[AUTH REGISTER ERROR]:", error.message);
 
     return res.status(500).json({
       success: false,
-      error: 'Registration failed.'
+      error: "Registration failed.",
     });
   }
 });
 
-// -------------------------
 // POST /api/auth/login
-// -------------------------
-router.post('/login', async (req, res) => {
+router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: "Database is unavailable.",
+      });
+    }
+
+    const email =
+      typeof req.body.email === "string"
+        ? req.body.email.trim().toLowerCase()
+        : "";
+
+    const password =
+      typeof req.body.password === "string"
+        ? req.body.password
+        : "";
 
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        error: 'Email and password are required.'
+        error: "Email and password are required.",
       });
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
-
-    const user = users.find(
-      (candidate) => candidate.email === normalizedEmail
+    const user = await User.findOne({ email }).select(
+      "+passwordHash"
     );
 
-    if (!user) {
+    if (
+      !user ||
+      !(await bcrypt.compare(password, user.passwordHash))
+    ) {
       return res.status(401).json({
         success: false,
-        error: 'Invalid email or password.'
+        error: "Invalid email or password.",
       });
     }
 
-    const passwordMatches = await bcrypt.compare(
-      password,
-      user.passwordHash
-    );
-
-    if (!passwordMatches) {
-      return res.status(401).json({
+    if (!user.isActive) {
+      return res.status(403).json({
         success: false,
-        error: 'Invalid email or password.'
+        error: "This account is inactive.",
       });
     }
 
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email,
-        role: user.role
-      },
-      JWT_SECRET,
-      {
-        expiresIn: '8h'
-      }
-    );
+    const token = generateAccessToken(user);
+
+    user.lastLoginAt = new Date();
+    await user.save();
 
     return res.json({
       success: true,
-      message: 'Login successful.',
+      message: "Login successful.",
       token,
-      data: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        verified: user.verified
-      }
+      data: publicUser(user),
     });
   } catch (error) {
-    console.error('[AUTH LOGIN ERROR]:', error);
+    console.error("[AUTH LOGIN ERROR]:", error.message);
 
     return res.status(500).json({
       success: false,
-      error: 'Login failed.'
+      error: "Login failed.",
     });
   }
 });
 
-// -------------------------
 // GET /api/auth/me
-// -------------------------
-router.get('/me', (req, res) => {
+router.get("/me", async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
-        error: 'Missing authentication token.'
+        error: "Missing authentication token.",
       });
     }
 
-    const token = authHeader.split(' ')[1];
+    const token = authHeader.slice("Bearer ".length).trim();
 
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = verifyAccessToken(token);
+
+    if (!decoded.id) {
+      return res.status(401).json({
+        success: false,
+        error: "Invalid authentication token.",
+      });
+    }
+
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: "Database is unavailable.",
+      });
+    }
+
+    const user = await User.findById(decoded.id).select(
+      "-passwordHash"
+    );
+
+    if (!user || !user.isActive) {
+      return res.status(401).json({
+        success: false,
+        error: "Account not found or inactive.",
+      });
+    }
 
     return res.json({
       success: true,
-      data: {
-        userId: decoded.userId,
-        email: decoded.email,
-        role: decoded.role
-      }
+      data: publicUser(user),
     });
   } catch (error) {
-    return res.status(401).json({
+    if (
+      error.name === "JsonWebTokenError" ||
+      error.name === "TokenExpiredError" ||
+      error.name === "NotBeforeError"
+    ) {
+      return res.status(401).json({
+        success: false,
+        error: "Invalid or expired authentication token.",
+      });
+    }
+
+    console.error("[AUTH ME ERROR]:", error.message);
+
+    return res.status(500).json({
       success: false,
-      error: 'Invalid or expired token.'
+      error: "Unable to retrieve account information.",
     });
   }
 });
