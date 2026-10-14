@@ -5,3 +5,10 @@ dist/
 .env
 .env.*
 !.env.example
+
+# Generated Python files
+__pycache__/
+*.py[cod]
+
+# Local backup files
+App/Backend/server.js.backup-before-auth-cleanup
